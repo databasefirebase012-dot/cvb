@@ -1,0 +1,6 @@
+{
+  "name": "XRANS FL",
+  "description": "Local VPN network tuner, latency controller & Shizuku ADB optimizer tool by developer xrans.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
