@@ -42,6 +42,9 @@ import com.example.ui.components.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 @Composable
 fun MainScreen(
     appPreferences: AppPreferences,
@@ -73,6 +76,11 @@ fun MainScreen(
         LocalVpnService.holdDelayMs = holdDelayMs
     }
 
+    // Periodically re-check Shizuku status
+    LaunchedEffect(Unit) {
+        shizukuManager.checkStatus()
+    }
+
     // Timer & Stats Ticker when VPN is Active
     LaunchedEffect(isVpnActive) {
         if (isVpnActive) {
@@ -101,6 +109,7 @@ fun MainScreen(
     }
 
     val primaryCol = accentColor.primaryColor
+    val scrollState = rememberScrollState()
 
     Scaffold(
         containerColor = Color(0xFF050505)
@@ -113,101 +122,93 @@ fun MainScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Top Header
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "XRANS FL",
-                                color = primaryCol,
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = (-0.5).sp
-                            )
-                            Text(
-                                text = "DEV BY XRANS • XRANS.FL",
-                                color = Color.White.copy(alpha = 0.5f),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 2.sp
-                            )
-                        }
-
-                        IconButton(
-                            onClick = { showSettingsDialog = true },
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.05f))
-                                .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Settings",
-                                tint = Color.White
-                            )
-                        }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "XRANS FL",
+                            color = primaryCol,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp
+                        )
+                        Text(
+                            text = "DEV BY XRANS • XRANS.FL",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 2.sp
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Permission Status Indicators
-                    PermissionStatusGrid(
-                        isVpnPrepared = isVpnPrepared,
-                        isShizukuAvailable = isShizukuAvail,
-                        hasShizukuPermission = hasShizukuPerm,
-                        accentColor = accentColor,
-                        onRequestShizuku = {
-                            if (!isShizukuAvail) {
-                                Toast.makeText(context, "Shizuku service belum berjalan. Jalankan Shizuku via ADB.", Toast.LENGTH_LONG).show()
-                            } else {
-                                shizukuManager.requestShizukuPermission()
-                            }
-                        },
-                        onVpnPrepareResult = { prepared ->
-                            isVpnPrepared = prepared
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Game Selector (Free Fire ORI / FF MAX)
-                    Row(
+                    IconButton(
+                        onClick = { showSettingsDialog = true },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(18.dp))
+                            .size(44.dp)
+                            .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.05f))
-                            .padding(4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
                     ) {
-                        TargetGame.values().forEach { game ->
-                            val isSelected = targetGame == game
-                            val bgCol = if (isSelected) primaryCol else Color.Transparent
-                            val txtCol = if (isSelected) Color.Black else Color.White.copy(alpha = 0.6f)
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = Color.White
+                        )
+                    }
+                }
 
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(bgCol)
-                                    .clickable { appPreferences.setTargetGame(game) }
-                                    .padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = game.title,
-                                    color = txtCol,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
-                            }
+                // Permission Status Indicators Grid
+                PermissionStatusGrid(
+                    isVpnPrepared = isVpnPrepared,
+                    isShizukuAvailable = isShizukuAvail,
+                    hasShizukuPermission = hasShizukuPerm,
+                    accentColor = accentColor,
+                    onRequestShizuku = {
+                        shizukuManager.requestShizukuPermission()
+                        shizukuManager.checkStatus()
+                    },
+                    onVpnPrepareResult = { prepared ->
+                        isVpnPrepared = prepared
+                    }
+                )
+
+                // Game Selector (Free Fire ORI / FF MAX)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color.White.copy(alpha = 0.05f))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    TargetGame.values().forEach { game ->
+                        val isSelected = targetGame == game
+                        val bgCol = if (isSelected) primaryCol else Color.Transparent
+                        val txtCol = if (isSelected) Color.Black else Color.White.copy(alpha = 0.6f)
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(bgCol)
+                                .clickable { appPreferences.setTargetGame(game) }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = game.title,
+                                color = txtCol,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
                         }
                     }
                 }
@@ -219,7 +220,7 @@ fun MainScreen(
                     bytesProcessed = bytesProcessed,
                     packetsProcessed = packetsProcessed,
                     accentColor = accentColor,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 // Shizuku Layer Info Badge
@@ -238,15 +239,17 @@ fun MainScreen(
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = "Shizuku status",
-                            tint = if (hasShizukuPerm) primaryCol else Color.Yellow,
+                            tint = if (hasShizukuPerm) primaryCol else Color(0xFFEAB308),
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
                             text = if (hasShizukuPerm)
                                 "Shizuku Active: Isolated process priority tuned for ${targetGame.title}"
+                            else if (isShizukuAvail)
+                                "Shizuku Ready: Tap Shizuku box above to grant permission"
                             else
-                                "Shizuku Optional: ADB system priority service available",
-                            color = Color.White.copy(alpha = 0.7f),
+                                "Shizuku Service: Run Shizuku via ADB or Wireless Debugging",
+                            color = Color.White.copy(alpha = 0.8f),
                             fontSize = 11.sp
                         )
                     }
@@ -256,12 +259,12 @@ fun MainScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
+                        .clip(RoundedCornerShape(28.dp))
                         .background(Color(0xFF111111))
                         .border(
                             width = 1.dp,
-                            color = Color.White.copy(alpha = 0.05f),
-                            shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp)
+                            color = Color.White.copy(alpha = 0.08f),
+                            shape = RoundedCornerShape(28.dp)
                         )
                         .padding(vertical = 20.dp, horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -292,7 +295,7 @@ fun MainScreen(
                                     detectTapGestures(
                                         onTap = {
                                             if (!isVpnPrepared) {
-                                                val intent = VpnService.prepare(context)
+                                                val intent = VpnService.prepare(context.applicationContext)
                                                 if (intent != null) {
                                                     Toast.makeText(context, "Izinkan permission VPN Service dahulu", Toast.LENGTH_SHORT).show()
                                                     return@detectTapGestures
@@ -378,13 +381,14 @@ fun MainScreen(
                         textAlign = TextAlign.Center
                     )
                 }
+
+                Spacer(modifier = Modifier.height(20.dp))
             }
 
-            // Floating Hold Data Delay Menu (overlay with space gap from bottom button)
+            // Floating Hold Data Delay Menu Dialog
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 180.dp),
+                    .align(Alignment.Center),
                 contentAlignment = Alignment.Center
             ) {
                 DelayMenuDialog(

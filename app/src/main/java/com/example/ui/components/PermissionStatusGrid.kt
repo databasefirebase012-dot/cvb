@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,114 +36,116 @@ fun PermissionStatusGrid(
 
     val vpnLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val prepared = VpnService.prepare(context) == null
+    ) { _ ->
+        val prepared = VpnService.prepare(context.applicationContext) == null
         onVpnPrepareResult(prepared)
     }
 
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // VPN Service Box
-        Box(
+        // VPN Service Permission Box
+        Surface(
             modifier = Modifier
                 .weight(1f)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFF161616))
+                .clip(RoundedCornerShape(16.dp))
                 .border(
                     width = 1.dp,
-                    color = if (isVpnPrepared) Color(0xFF22C55E).copy(alpha = 0.4f) else Color.Red.copy(alpha = 0.3f),
-                    shape = RoundedCornerShape(20.dp)
+                    color = if (isVpnPrepared) Color(0xFF22C55E).copy(alpha = 0.5f) else Color(0xFFEF4444).copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(16.dp)
                 )
                 .clickable {
-                    val intent = VpnService.prepare(context)
+                    val intent = VpnService.prepare(context.applicationContext)
                     if (intent != null) {
                         vpnLauncher.launch(intent)
                     } else {
                         onVpnPrepareResult(true)
                     }
+                },
+            color = Color(0xFF141414)
+        ) {
+            Column(
+                modifier = Modifier.padding(vertical = 10.dp, horizontal = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(if (isVpnPrepared) Color(0xFF22C55E) else Color(0xFFEF4444))
+                    )
+                    Text(
+                        text = "VPN SERVICE",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                .padding(vertical = 12.dp, horizontal = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "VPN SERVICE",
-                    color = if (isVpnPrepared) Color(0xFF22C55E) else Color.Red,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(if (isVpnPrepared) Color(0xFF22C55E) else Color.Red)
+                    text = if (isVpnPrepared) "READY" else "TAP PERMISSION",
+                    color = if (isVpnPrepared) Color(0xFF22C55E) else Color(0xFFEF4444),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
 
-        // Shizuku Box
-        Box(
+        // Shizuku Service Permission Box
+        Surface(
             modifier = Modifier
                 .weight(1f)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFF161616))
+                .clip(RoundedCornerShape(16.dp))
                 .border(
                     width = 1.dp,
-                    color = if (hasShizukuPermission) accentColor.primaryColor.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(20.dp)
+                    color = if (hasShizukuPermission) accentColor.primaryColor.copy(alpha = 0.5f)
+                           else if (isShizukuAvailable) Color(0xFFEAB308).copy(alpha = 0.4f)
+                           else Color.White.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(16.dp)
                 )
-                .clickable { onRequestShizuku() }
-                .padding(vertical = 12.dp, horizontal = 8.dp),
-            contentAlignment = Alignment.Center
+                .clickable { onRequestShizuku() },
+            color = Color(0xFF141414)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                modifier = Modifier.padding(vertical = 10.dp, horizontal = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (hasShizukuPermission) accentColor.primaryColor
+                                else if (isShizukuAvailable) Color(0xFFEAB308)
+                                else Color.White.copy(alpha = 0.3f)
+                            )
+                    )
+                    Text(
+                        text = "SHIZUKU ADB",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Text(
-                    text = "SHIZUKU",
-                    color = if (hasShizukuPermission) accentColor.primaryColor else Color.White.copy(alpha = 0.6f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (hasShizukuPermission) accentColor.primaryColor
-                            else if (isShizukuAvailable) Color(0xFFEAB308)
-                            else Color.White.copy(alpha = 0.2f)
-                        )
-                )
-            }
-        }
-
-        // Floating Perms Box
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFF161616))
-                .border(
-                    width = 1.dp,
-                    color = Color.White.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(20.dp)
-                )
-                .padding(vertical = 12.dp, horizontal = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "FLOATING",
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.3f))
+                    text = if (hasShizukuPermission) "ACTIVE & GRANTED"
+                           else if (isShizukuAvailable) "TAP TO ALLOW"
+                           else "SHIZUKU OFF",
+                    color = if (hasShizukuPermission) accentColor.primaryColor
+                           else if (isShizukuAvailable) Color(0xFFEAB308)
+                           else Color.White.copy(alpha = 0.5f),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }

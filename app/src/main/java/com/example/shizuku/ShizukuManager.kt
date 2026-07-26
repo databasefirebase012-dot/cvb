@@ -50,12 +50,14 @@ class ShizukuManager(private val context: Context) {
         } catch (e: Exception) {
             false
         }
-        _isShizukuAvailable.value = ping
-        if (ping) {
-            checkPermission()
-        } else {
-            _hasShizukuPermission.value = false
+        val hasManifestPerm = try {
+            context.checkSelfPermission("moe.shizuku.manager.permission.API_V23") == PackageManager.PERMISSION_GRANTED
+        } catch (e: Exception) {
+            false
         }
+
+        _isShizukuAvailable.value = ping || hasManifestPerm
+        checkPermission()
     }
 
     private fun checkPermission() {
@@ -63,11 +65,17 @@ class ShizukuManager(private val context: Context) {
             if (Shizuku.isPreV11()) {
                 _hasShizukuPermission.value = false
             } else {
-                val granted = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
-                _hasShizukuPermission.value = granted
+                val shizukuPerm = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+                val manifestPerm = context.checkSelfPermission("moe.shizuku.manager.permission.API_V23") == PackageManager.PERMISSION_GRANTED
+                _hasShizukuPermission.value = shizukuPerm || manifestPerm
             }
         } catch (e: Exception) {
-            _hasShizukuPermission.value = false
+            val manifestPerm = try {
+                context.checkSelfPermission("moe.shizuku.manager.permission.API_V23") == PackageManager.PERMISSION_GRANTED
+            } catch (ex: Exception) {
+                false
+            }
+            _hasShizukuPermission.value = manifestPerm
         }
     }
 
@@ -75,11 +83,19 @@ class ShizukuManager(private val context: Context) {
         try {
             if (Shizuku.isPreV11()) {
                 Log.w(TAG, "Shizuku Pre-v11 is not supported.")
-            } else if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
-                Shizuku.requestPermission(SHIZUKU_REQ_CODE)
+            } else {
+                val shizukuPerm = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+                val manifestPerm = context.checkSelfPermission("moe.shizuku.manager.permission.API_V23") == PackageManager.PERMISSION_GRANTED
+                if (shizukuPerm || manifestPerm) {
+                    _hasShizukuPermission.value = true
+                    _isShizukuAvailable.value = true
+                } else {
+                    Shizuku.requestPermission(SHIZUKU_REQ_CODE)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to request Shizuku permission", e)
+            checkStatus()
         }
     }
 
